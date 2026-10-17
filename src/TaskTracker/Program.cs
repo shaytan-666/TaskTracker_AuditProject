@@ -1,4 +1,6 @@
+using System.Globalization;
 using TaskTracker.Models;
+using TaskTracker.Modules.Reports;
 using TaskTracker.Services;
 
 var storage = new TaskStorage("data/tasks.json");
@@ -6,6 +8,8 @@ var storage = new TaskStorage("data/tasks.json");
 var tasks = storage.Load();
 
 var taskService = new TaskService(tasks);
+
+var reportMenu = new ReportMenu(taskService);
 
 while (true)
 {
@@ -22,6 +26,7 @@ while (true)
     Console.WriteLine("5. Поиск");
     Console.WriteLine("6. Фильтр по статусу");
     Console.WriteLine("7. Фильтр по приоритету");
+    Console.WriteLine("8. Отчеты");
     Console.WriteLine("0. Выход");
 
     Console.Write("\nВыберите действие: ");
@@ -65,6 +70,10 @@ while (true)
             storage.Save(taskService.GetAll());
             return;
 
+        case "8":
+            reportMenu.Run();
+            break;
+
         default:
             Console.WriteLine("Неизвестная команда.");
             Pause();
@@ -102,23 +111,9 @@ static void AddTask(TaskService service)
 {
     Console.Clear();
 
-    Console.Write("Название: ");
-    var title = Console.ReadLine();
+    var task = GetInputtedTask();
 
-    Console.Write("Описание: ");
-    var description = Console.ReadLine();
-
-    Console.Write("Исполнитель: ");
-    var assignee = Console.ReadLine();
-
-    var task = new TaskItem
-    {
-        Title = title ?? string.Empty,
-        Description = description ?? string.Empty,
-        Assignee = assignee ?? string.Empty,
-        Priority = TaskPriority.Medium,
-        Status = TaskState.New
-    };
+    if (task == null) return;
 
     try
     {
@@ -155,17 +150,15 @@ static void EditTask(TaskService service)
         return;
     }
 
-    Console.Write($"Название ({task.Title}): ");
-    var title = Console.ReadLine();
+    var edittedTask = GetInputtedTask();
+    if (edittedTask == null) return;
 
-    if (!string.IsNullOrWhiteSpace(title))
-        task.Title = title;
-
-    Console.Write($"Исполнитель ({task.Assignee}): ");
-    var assignee = Console.ReadLine();
-
-    if (!string.IsNullOrWhiteSpace(assignee))
-        task.Assignee = assignee;
+    task.Title = edittedTask.Title;
+    task.Description = edittedTask.Description;
+    task.Status = edittedTask.Status;
+    task.Assignee = edittedTask.Assignee;
+    task.Priority = edittedTask.Priority;
+    task.DueDate = edittedTask.DueDate;
 
     Console.WriteLine("Задача изменена.");
 
@@ -252,9 +245,72 @@ static void FilterByPriority(TaskService service)
     ShowTasks(service.FilterByPriority(priority));
 }
 
+
 static void Pause()
 {
     Console.WriteLine();
     Console.WriteLine("Нажмите Enter для продолжения...");
     Console.ReadLine();
+}
+
+static TaskItem? GetInputtedTask()
+{
+    Console.Write("Название: ");
+    var title = Console.ReadLine();
+    if (string.IsNullOrEmpty(title))
+    {
+        Console.WriteLine("Некорректный ввод.");
+        Pause();
+        return null;
+    }
+
+    Console.Write("Описание: ");
+    var description = Console.ReadLine();
+
+    Console.Write("Исполнитель: ");
+    var assignee = Console.ReadLine();
+    if (string.IsNullOrEmpty(assignee))
+    {
+        Console.WriteLine("Некорректный ввод.");
+        Pause();
+        return null;
+    }
+
+    Console.Write("Приоритетность (0 - низкая, 1 - средняя, 2 - высокая): ");
+    if (!int.TryParse(Console.ReadLine(), out var priority) || priority < 0 || priority > 2)
+    {
+        Console.WriteLine("Некорректный ввод.");
+        Pause();
+        return null;
+    }
+
+    Console.Write("Статус (0 - новый, 1 - в процессе, 2 - завершен): ");
+    if (!int.TryParse(Console.ReadLine(), out var state) || state < 0 || state > 2)
+    {
+        Console.WriteLine("Некорректный ввод.");
+        Pause();
+        return null;
+    }
+
+    Console.Write("Срок (дд.мм.гггг чч:ММ/-): ");
+    string? inputDate = Console.ReadLine();
+    if (!DateTime.TryParseExact(inputDate, "dd.MM.yyyy HH:mm", CultureInfo.InvariantCulture, DateTimeStyles.None, out var dueDate))
+    {
+        if (inputDate != "-")
+        {
+            Console.WriteLine("Некорректный ввод.");
+            Pause();
+            return null;
+        }
+    }
+
+    return new TaskItem
+    {
+        Title = title ?? string.Empty,
+        Description = description ?? string.Empty,
+        Assignee = assignee ?? string.Empty,
+        Priority = (TaskPriority)priority,
+        Status = (TaskState)state,
+        DueDate = dueDate,
+    };
 }
