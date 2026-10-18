@@ -72,6 +72,7 @@ while (true)
 
         case "8":
             reportMenu.Run();
+            Pause();
             break;
 
         default:

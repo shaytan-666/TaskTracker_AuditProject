@@ -16,16 +16,28 @@ public class TaskReportService
     public string BuildSummary()
     {
         var tasks = _taskService.GetAll().ToList();
-        var completed = tasks.Count(t => t.Status.ToString() == "Done");
-        var completionPercent = completed * 100 / tasks.Count;
-        var overdue = tasks.Count(t => t.DueDate!.Value < DateTime.Now);
-        var highPriority = tasks.Count(t => (int)t.Priority == 3);
 
-        var mostLoadedAssignee = tasks
-            .GroupBy(t => t.Assignee!.Trim().ToLower())
+        if (tasks.Count == 0)
+        {
+            return "=== Отчёт по задачам ===\nЗадачи отсутствуют.";
+        }
+
+        var completed = tasks.Count(t => t.Status == TaskState.Completed);
+        var completionPercent = (int)Math.Round((double)completed * 100 / tasks.Count);
+
+        var overdue = tasks.Count(t => t.Status != TaskState.Completed
+                                     && t.DueDate.HasValue
+                                     && t.DueDate.Value < DateTime.Now);
+
+        var highPriority = tasks.Count(t => t.Priority == TaskPriority.High);
+
+        var loadedAssigneeGroup = tasks
+            .Where(t => !string.IsNullOrWhiteSpace(t.Assignee))
+            .GroupBy(t => t.Assignee.Trim().ToLower())
             .OrderByDescending(g => g.Count())
-            .First()
-            .Key;
+            .FirstOrDefault();
+
+        var mostLoadedAssignee = loadedAssigneeGroup != null ? loadedAssigneeGroup.Key : "Не назначено";
 
         var builder = new StringBuilder();
         builder.AppendLine("=== Отчёт по задачам ===");
@@ -41,7 +53,9 @@ public class TaskReportService
     public List<TaskItem> GetOverdueTasks()
     {
         return _taskService.GetAll()
-            .Where(t => t.DueDate!.Value < DateTime.Now)
+            .Where(t => t.Status != TaskState.Completed
+                     && t.DueDate.HasValue
+                     && t.DueDate.Value < DateTime.Now)
             .ToList();
     }
 }
