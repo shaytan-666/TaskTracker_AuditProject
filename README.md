@@ -13,12 +13,19 @@ TaskTracker — это консольное приложение на платф
 
 ## Структура проекта
 TaskTracker_AuditProject/
+
 ├── src/
+
 │   └── TaskTracker/          # Исходный код приложения
+
 ├── docs/                     # Документация проекта
+
 ├── config/                   # Конфигурационные файлы и шаблоны
+
 ├── README.md
+
 ├── CHANGELOG.md
+
 └── .gitignore
 
 ## Запуск
