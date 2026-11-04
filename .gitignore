@@ -1,6 +1,8 @@
 # Build results
 bin/
 obj/
+src/TaskTracker/bin/
+src/TaskTracker/obj/
 
 # Logs
 *.log
@@ -11,7 +13,9 @@ obj/
 # Local files
 notes_local.txt
 temp/
+data/
 NewFolder/
 Folder1/
 config/appsettings.Development.json
 .vs/
+project-info.txt
